@@ -1,22 +1,17 @@
 package com.social.network.auth_service.exception;
 
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 @Getter
-public abstract class BaseAppException extends RuntimeException{
+public class BaseAppException extends RuntimeException{
     private final String errorCode;
-    private final int status;
+    private final HttpStatus status;
 
-    public BaseAppException(String message, String errorCode, int status){
-        super(message);
-        this.errorCode = errorCode;
-        this.status = status;
-    }
-
-    public BaseAppException(String message, String errorCode, int status, Throwable cause){
-        super(message,cause);
-        this.errorCode = errorCode;
-        this.status =status;
+    public BaseAppException(ErrorCode errorCode){
+        super(errorCode.getMessage());
+        this.errorCode = errorCode.getCode();
+        this.status = errorCode.getStatus();
     }
 
 }

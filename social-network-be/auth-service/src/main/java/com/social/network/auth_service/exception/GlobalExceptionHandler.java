@@ -12,15 +12,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseAppException.class)
     public ResponseEntity<BaseResponse<Object>> handleBaseAppException(BaseAppException ex) {
-        BaseResponse<Object> body = BaseResponse.builder().status(ex.getStatus()).message(ex.getMessage()).errorCode(ex.getErrorCode()).timestamp(LocalDateTime.now()).data(null).build();
+        BaseResponse<Object> body = BaseResponse.builder().status(ex.getStatus().value()).message(ex.getMessage()).errorCode(ex.getErrorCode()).timestamp(LocalDateTime.now()).data(null).build();
 
         return ResponseEntity.status(ex.getStatus()).body(body);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<BaseResponse<Object>> handleAll(Exception ex) {
-        BaseResponse<Object> body = BaseResponse.builder().status(500).message("Internal server error").errorCode("INTERNAL_ERROR").timestamp(LocalDateTime.now()).data(null).build();
-
-        return ResponseEntity.status(500).body(body);
-    }
 }

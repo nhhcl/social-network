@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.social.network.auth_service.dto.request.CreateUserRequest;
 import com.social.network.auth_service.dto.request.RegisterRequest;
 import com.social.network.auth_service.entity.*;
+import com.social.network.auth_service.exception.BaseAppException;
+import com.social.network.auth_service.exception.ErrorCode;
 import com.social.network.auth_service.exception.RefreshTokenExpiredException;
+import com.social.network.auth_service.exception.RefreshTokenNotFoundException;
 import com.social.network.auth_service.repository.AccountRepository;
 import com.social.network.auth_service.repository.AuthOutboxEventRepository;
 import com.social.network.auth_service.repository.TokenRepository;
@@ -34,10 +37,10 @@ public class AuthService {
 
     public String login(String username, String password) {
         AccountEntity account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BaseAppException(ErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(password, account.getPasswordHash())) {
-            throw new RuntimeException("Invalid password");
+            throw new BaseAppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         List<String> roles = account.getRoles().stream().map(RoleEntity::getName).toList();
@@ -53,19 +56,18 @@ public class AuthService {
     public String refreshAccessToken(String refreshToken){
         try{
             return tokenService.refreshAccessToken(refreshToken);
-        }catch (RefreshTokenExpiredException e){
+        }catch (BaseAppException e){
             throw e;
+        }catch (Exception e){
+            throw new BaseAppException(ErrorCode.SYSTEM_ERROR);
         }
 
     }
 
     @Transactional
     public AccountEntity register(RegisterRequest request) {
-        if (accountRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already taken");
-        }
-        if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already taken");
+        if (accountRepository.findByUsername(request.getUsername()).isPresent() || accountRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BaseAppException(ErrorCode.USERNAME_OR_EMAIL_ALREADY_EXISTS);
         }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         AccountEntity newAccount = accountRepository.save(AccountEntity.builder()
@@ -101,7 +103,6 @@ public class AuthService {
                         } catch (Exception e) {
                             outbox.setStatus(OutboxStatus.SEND_FAILED);
                         } finally {
-                            System.out.println("Save outbox");
                             authOutboxEventService.saveAuthOutboxEvent(outbox);
                         }
                     }

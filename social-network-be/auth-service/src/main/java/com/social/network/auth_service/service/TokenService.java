@@ -3,6 +3,8 @@ package com.social.network.auth_service.service;
 import com.social.network.auth_service.entity.AccountEntity;
 import com.social.network.auth_service.entity.RoleEntity;
 import com.social.network.auth_service.entity.TokenEntity;
+import com.social.network.auth_service.exception.BaseAppException;
+import com.social.network.auth_service.exception.ErrorCode;
 import com.social.network.auth_service.exception.RefreshTokenExpiredException;
 import com.social.network.auth_service.exception.RefreshTokenNotFoundException;
 import com.social.network.auth_service.repository.TokenRepository;
@@ -31,9 +33,9 @@ public class TokenService {
 
 
     public String refreshAccessToken(String refreshToken){
-        TokenEntity tokenEntity = tokenRepository.findByToken(refreshToken).orElseThrow(RefreshTokenNotFoundException::new);
+        TokenEntity tokenEntity = tokenRepository.findByToken(refreshToken).orElseThrow(()-> new BaseAppException(ErrorCode.REFRESH_TOKEN_EXPIRED));
         if(tokenEntity.getExpiredAt().isBefore(LocalDateTime.now())){
-            throw new RefreshTokenExpiredException();
+            throw new BaseAppException(ErrorCode.REFRESH_TOKEN_EXPIRED);
         }
         AccountEntity account = tokenEntity.getAccount();
         List<String> roles = account.getRoles().stream()
